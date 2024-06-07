@@ -152,8 +152,8 @@ def generate_reports(group_id, start_date, end_date):
 
 # Example usage
 group_id = 'YOUR_GROUP_ID_HERE'  # Replace with your GitLab group ID
-start_date = (datetime.now() - timedelta(days=30)).isoformat()  # Adjust date range as needed
-end_date = datetime.now().isoformat()
+start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # Adjust date range as needed
+end_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
 daily_metrics_df, monthly_metrics_df = generate_reports(group_id, start_date, end_date)
 
