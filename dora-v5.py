@@ -69,12 +69,21 @@ def fetch_pipeline_jobs(project_id, pipeline_id):
     jobs = fetch_gitlab_data(f'/projects/{project_id}/pipelines/{pipeline_id}/jobs')
     return jobs
 
+# Parse datetime with flexible handling of formats
+def parse_datetime(date_str):
+    for fmt in ('%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ'):
+        try:
+            return datetime.strptime(date_str, fmt)
+        except ValueError:
+            continue
+    raise ValueError(f"Date format for '{date_str}' is not supported")
+
 # Analyze DORA metrics for a single project
 def analyze_dora_metrics(project_id, start_date, end_date):
     deployments = fetch_deployments(project_id, start_date, end_date)
     pipelines = fetch_pipelines(project_id, start_date, end_date)
 
-    deployment_times = [datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%SZ') for d in deployments]
+    deployment_times = [parse_datetime(d['created_at']) for d in deployments]
 
     lead_times = []
     change_failures = 0
@@ -83,19 +92,19 @@ def analyze_dora_metrics(project_id, start_date, end_date):
     for pipeline in pipelines:
         if pipeline['status'] == 'success':
             jobs = fetch_pipeline_jobs(project_id, pipeline['id'])
-            created_at = datetime.strptime(pipeline['created_at'], '%Y-%m-%dT%H:%M:%SZ')
-            updated_at = datetime.strptime(pipeline['updated_at'], '%Y-%m-%dT%H:%M:%SZ')
+            created_at = parse_datetime(pipeline['created_at'])
+            updated_at = parse_datetime(pipeline['updated_at'])
             lead_times.append((updated_at - created_at).total_seconds() / 3600)  # Lead time in hours
 
             for job in jobs:
                 if job['status'] == 'failed':
                     change_failures += 1
                 if job['name'] == 'restore' and job['status'] == 'success':
-                    restoration_time = datetime.strptime(job['finished_at'], '%Y-%m-%dT%H:%M:%SZ') - datetime.strptime(job['started_at'], '%Y-%m-%dT%H:%M:%SZ')
+                    restoration_time = parse_datetime(job['finished_at']) - parse_datetime(job['started_at'])
                     restoration_times.append(restoration_time.total_seconds() / 3600)  # Restoration time in hours
 
     # Deployment frequency as deployments per day
-    total_days = (datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%SZ') - datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%SZ')).days + 1
+    total_days = (parse_datetime(end_date) - parse_datetime(start_date)).days + 1
     deployment_frequency = len(deployment_times) / total_days if total_days > 0 else 0
     
     # Average lead time for changes in hours
