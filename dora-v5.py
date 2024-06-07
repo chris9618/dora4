@@ -74,7 +74,7 @@ def analyze_dora_metrics(project_id, start_date, end_date):
     deployments = fetch_deployments(project_id, start_date, end_date)
     pipelines = fetch_pipelines(project_id, start_date, end_date)
 
-    deployment_times = [datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%S.%fZ') for d in deployments]
+    deployment_times = [datetime.strptime(d['created_at'], '%Y-%m-%dT%H:%M:%SZ') for d in deployments]
 
     lead_times = []
     change_failures = 0
@@ -83,15 +83,15 @@ def analyze_dora_metrics(project_id, start_date, end_date):
     for pipeline in pipelines:
         if pipeline['status'] == 'success':
             jobs = fetch_pipeline_jobs(project_id, pipeline['id'])
-            created_at = datetime.strptime(pipeline['created_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
-            updated_at = datetime.strptime(pipeline['updated_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
+            created_at = datetime.strptime(pipeline['created_at'], '%Y-%m-%dT%H:%M:%SZ')
+            updated_at = datetime.strptime(pipeline['updated_at'], '%Y-%m-%dT%H:%M:%SZ')
             lead_times.append((updated_at - created_at).total_seconds() / 3600)  # Lead time in hours
 
             for job in jobs:
                 if job['status'] == 'failed':
                     change_failures += 1
                 if job['name'] == 'restore' and job['status'] == 'success':
-                    restoration_time = datetime.strptime(job['finished_at'], '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.strptime(job['started_at'], '%Y-%m-%dT%H:%M:%S.%fZ')
+                    restoration_time = datetime.strptime(job['finished_at'], '%Y-%m-%dT%H:%M:%SZ') - datetime.strptime(job['started_at'], '%Y-%m-%dT%H:%M:%SZ')
                     restoration_times.append(restoration_time.total_seconds() / 3600)  # Restoration time in hours
 
     # Deployment frequency as deployments per day
@@ -118,6 +118,7 @@ def analyze_dora_metrics(project_id, start_date, end_date):
 def analyze_multiple_projects(project_ids, start_date, end_date):
     metrics = {
         'project_id': [],
+        'date': [],
         'deployment_frequency': [],
         'lead_time_for_changes': [],
         'change_failure_rate': [],
@@ -127,6 +128,7 @@ def analyze_multiple_projects(project_ids, start_date, end_date):
     for project_id in project_ids:
         dora_metrics = analyze_dora_metrics(project_id, start_date, end_date)
         metrics['project_id'].append(project_id)
+        metrics['date'].append(end_date)  # Assuming end_date as the date for reporting purposes
         metrics['deployment_frequency'].append(dora_metrics['deployment_frequency'])
         metrics['lead_time_for_changes'].append(dora_metrics['lead_time_for_changes'])
         metrics['change_failure_rate'].append(dora_metrics['change_failure_rate'])
