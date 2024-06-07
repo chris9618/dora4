@@ -95,7 +95,8 @@ def analyze_dora_metrics(project_id, start_date, end_date):
                     restoration_times.append(restoration_time.total_seconds() / 3600)  # Restoration time in hours
 
     # Deployment frequency as deployments per day
-    deployment_frequency = len(deployment_times) / ((datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%S.%fZ') - datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%S.%fZ')).days + 1)
+    total_days = (datetime.strptime(end_date, '%Y-%m-%dT%H:%M:%SZ') - datetime.strptime(start_date, '%Y-%m-%dT%H:%M:%SZ')).days + 1
+    deployment_frequency = len(deployment_times) / total_days if total_days > 0 else 0
     
     # Average lead time for changes in hours
     lead_time_for_changes = sum(lead_times) / len(lead_times) if lead_times else 0
@@ -152,8 +153,8 @@ def generate_reports(group_id, start_date, end_date):
 
 # Example usage
 group_id = 'YOUR_GROUP_ID_HERE'  # Replace with your GitLab group ID
-start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')  # Adjust date range as needed
-end_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+start_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%SZ')  # Adjust date range as needed
+end_date = datetime.now().strftime('%Y-%m-%dT%H:%M:%SZ')
 
 daily_metrics_df, monthly_metrics_df = generate_reports(group_id, start_date, end_date)
 
